@@ -3,8 +3,10 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { usePatients } from '../hooks/usePatients'
 import { Button } from '../components/common/Button'
 import { ConfirmDialog } from '../components/common/ConfirmDialog'
+import { PatientFormModal } from '../components/patients/PatientFormModal'
 import { formatCPF } from '../utils/cpf'
 import { formatDate } from '../utils/date'
+import type { PatientFormValues } from '../types/models'
 
 function Field({ label, value }: { label: string; value?: string }) {
   return (
@@ -18,8 +20,9 @@ function Field({ label, value }: { label: string; value?: string }) {
 export function PatientDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { getPatientById, deletePatient } = usePatients()
+  const { getPatientById, deletePatient, updatePatient, isCpfTaken } = usePatients()
   const [showDelete, setShowDelete] = useState(false)
+  const [formOpen, setFormOpen] = useState(false)
 
   const patient = getPatientById(id!)
 
@@ -42,7 +45,7 @@ export function PatientDetailPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-800">{patient.name}</h1>
         <div className="flex gap-2">
-          <Button variant="secondary" onClick={() => navigate(`/patients/${id}/edit`)}>Editar</Button>
+          <Button variant="secondary" onClick={() => setFormOpen(true)}>Editar</Button>
           <Button variant="danger" onClick={() => setShowDelete(true)}>Excluir</Button>
         </div>
       </div>
@@ -86,6 +89,14 @@ export function PatientDetailPage() {
         onConfirm={handleDelete}
         title="Excluir paciente"
         message={`Tem certeza que deseja excluir "${patient.name}"?`}
+      />
+
+      <PatientFormModal
+        open={formOpen}
+        onClose={() => setFormOpen(false)}
+        onSave={(data: PatientFormValues) => updatePatient(id!, data)}
+        patient={patient}
+        isCpfTaken={isCpfTaken}
       />
     </div>
   )

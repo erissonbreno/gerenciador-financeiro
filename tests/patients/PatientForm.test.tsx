@@ -1,17 +1,22 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
-import { PatientFormPage } from '../../src/pages/PatientFormPage'
+import { PatientFormModal } from '../../src/components/patients/PatientFormModal'
 
-function renderForm() {
+const noop = () => {}
+
+function renderModal() {
   return render(
-    <MemoryRouter initialEntries={['/patients/new']}>
-      <PatientFormPage />
-    </MemoryRouter>,
+    <PatientFormModal
+      open={true}
+      onClose={noop}
+      onSave={noop}
+      patient={null}
+      isCpfTaken={() => false}
+    />,
   )
 }
 
-describe('PatientForm', () => {
+describe('PatientFormModal', () => {
   beforeEach(() => {
     localStorage.clear()
   })
@@ -20,8 +25,8 @@ describe('PatientForm', () => {
     localStorage.clear()
   })
 
-  it('renders all 17 field labels', () => {
-    renderForm()
+  it('renders all field labels', () => {
+    renderModal()
 
     const labels = [
       'Nome completo', 'Data de nascimento', 'CPF', 'RG', 'Gênero',
@@ -35,7 +40,7 @@ describe('PatientForm', () => {
   })
 
   it('shows required error messages on empty submit', () => {
-    renderForm()
+    renderModal()
 
     fireEvent.click(screen.getByText('Cadastrar paciente'))
 
@@ -43,7 +48,7 @@ describe('PatientForm', () => {
   })
 
   it('shows CPF error for invalid CPF', () => {
-    renderForm()
+    renderModal()
 
     fireEvent.change(screen.getByLabelText('CPF'), { target: { value: '11111111111' } })
     fireEvent.click(screen.getByText('Cadastrar paciente'))
