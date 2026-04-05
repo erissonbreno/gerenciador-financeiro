@@ -43,8 +43,9 @@ From `$ARGUMENTS`, extract:
    - Example: `card-component` or `card-component-dashboard`.
 
 3. `branch_name`  
-   - Format: `claude/feature/<feature_slug>`  
-   - Example: `claude/feature/card-component`.
+   - Format: `feature/<feature_slug>`  
+   - Do NOT add the `claude/` prefix.  
+   - Example: `feature/card-component`.
 
 If you cannot infer a sensible `feature_title` and `feature_slug`, ask the user to clarify instead of guessing.
 
