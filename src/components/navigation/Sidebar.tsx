@@ -32,7 +32,7 @@ export function Sidebar() {
   return (
     <aside className="bg-white border-r border-gray-200 w-64 md:w-20 lg:w-64 shrink-0 min-h-screen">
       <div className="p-4 lg:p-6">
-        <h1 className="text-xl font-bold text-primary-700 hidden lg:block">Financeiro</h1>
+        <h1 className="text-xl font-bold text-primary-700 hidden lg:block">Gerenciador Financeiro</h1>
         <h1 className="text-xl font-bold text-primary-700 lg:hidden text-center">F</h1>
       </div>
       <nav className="mt-2">
