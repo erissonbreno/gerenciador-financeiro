@@ -15,8 +15,8 @@ export function AccountSummary({ summary }: AccountSummaryProps) {
         </p>
       </div>
       <div className="bg-accent-50 border border-accent-200 rounded-xl p-4">
-        <p className="text-xs font-medium text-accent-700 uppercase tracking-wide">Total Pago</p>
-        <p className="text-2xl font-bold text-accent-800 mt-1" data-testid="total-paid">
+        <p className="text-xs font-medium text-accent-700 uppercase tracking-wide">Total A Receber</p>
+        <p className="text-2xl font-bold text-accent-800 mt-1" data-testid="total-receivable">
           {formatBRL(summary.totalPaid)}
         </p>
       </div>

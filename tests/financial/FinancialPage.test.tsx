@@ -21,10 +21,9 @@ describe('FinancialPage', () => {
     localStorage.clear()
   })
 
-  it('renders both sub-tab labels', () => {
+  it('renders financial sub-tab label', () => {
     renderPage()
 
-    expect(screen.getByText('Contas a Pagar')).toBeInTheDocument()
     expect(screen.getByText('Contas a Receber')).toBeInTheDocument()
   })
 
@@ -79,6 +78,6 @@ describe('FinancialPage', () => {
     fireEvent.change(statusSelect, { target: { value: 'paid' } })
     fireEvent.click(screen.getByText('Salvar'))
 
-    expect(screen.getByTestId('total-paid').textContent).toContain('500')
+    expect(screen.getByTestId('total-receivable').textContent).toContain('500')
   })
 })

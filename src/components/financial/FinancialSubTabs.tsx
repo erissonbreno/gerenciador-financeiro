@@ -1,7 +1,6 @@
 import type { AccountType } from '../../types/models'
 
 const tabs: { key: AccountType; label: string }[] = [
-  { key: 'payable', label: 'Contas a Pagar' },
   { key: 'receivable', label: 'Contas a Receber' },
 ]
 
