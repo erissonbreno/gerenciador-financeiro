@@ -1,11 +1,12 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { describe, it, expect } from 'vitest'
+import { screen, waitFor } from '@testing-library/react'
+import { userEvent } from '@testing-library/user-event'
 import { PatientsPage } from '../../src/pages/PatientsPage'
-import type { Patient } from '../../src/types/models'
+import { db } from '../../src/mocks/db'
+import { renderWithProviders } from '../utils/renderWithProviders'
+import type { PatientFormValues } from '../../src/types/models'
 
-const samplePatient: Patient = {
-  id: 'test-1',
+const samplePatientData: PatientFormValues = {
   name: 'Maria Silva',
   cpf: '52998224725',
   phone: '(11) 99999-0000',
@@ -22,42 +23,32 @@ const samplePatient: Patient = {
   state: 'SP',
   zip: '01000000',
   healthPlan: '',
-  createdAt: '2024-01-01T00:00:00.000Z',
 }
 
 function renderPage() {
-  return render(
-    <MemoryRouter>
-      <PatientsPage />
-    </MemoryRouter>,
-  )
+  return renderWithProviders(<PatientsPage />)
 }
 
 describe('PatientList', () => {
-  beforeEach(() => {
-    localStorage.clear()
-  })
-
-  afterEach(() => {
-    localStorage.clear()
-  })
-
-  it('displays a pre-seeded patient in the table', () => {
-    localStorage.setItem('patients', JSON.stringify([samplePatient]))
+  it('displays a pre-seeded patient in the table', async () => {
+    db.patients.create(samplePatientData, { id: 'test-1', createdAt: '2024-01-01T00:00:00.000Z' })
     renderPage()
 
-    expect(screen.getByText('Maria Silva')).toBeInTheDocument()
+    expect(await screen.findByText('Maria Silva')).toBeInTheDocument()
   })
 
-  it('removes a patient from the table on delete', () => {
-    localStorage.setItem('patients', JSON.stringify([samplePatient]))
+  it('removes a patient from the table on delete', async () => {
+    db.patients.create(samplePatientData, { id: 'test-1', createdAt: '2024-01-01T00:00:00.000Z' })
     renderPage()
 
-    expect(screen.getByText('Maria Silva')).toBeInTheDocument()
+    expect(await screen.findByText('Maria Silva')).toBeInTheDocument()
 
-    fireEvent.click(screen.getByText('Excluir'))
-    fireEvent.click(screen.getByText('Confirmar'))
+    const user = userEvent.setup()
+    await user.click(screen.getByText('Excluir'))
+    await user.click(screen.getByText('Confirmar'))
 
-    expect(screen.queryByText('Maria Silva')).not.toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.queryByText('Maria Silva')).not.toBeInTheDocument()
+    })
   })
 })

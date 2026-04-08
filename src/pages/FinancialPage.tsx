@@ -13,7 +13,7 @@ import type { AccountType, AccountWithDerived, AccountFormData } from '../types/
 
 export function FinancialPage() {
   const [activeTab, setActiveTab] = useState<AccountType>('payable')
-  const { accounts, summary, addAccount, updateAccount, deleteAccount } = useAccounts(activeTab)
+  const { accounts, summary, addAccount, updateAccount, deleteAccount, isLoading, error } = useAccounts(activeTab)
   const { patients } = usePatients()
   const { pagedItems, currentPage, totalPages, next, prev } = usePagination(accounts)
 
@@ -21,11 +21,11 @@ export function FinancialPage() {
   const [editTarget, setEditTarget] = useState<AccountWithDerived | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<AccountWithDerived | null>(null)
 
-  const handleSave = (data: AccountFormData) => {
+  const handleSave = async (data: AccountFormData) => {
     if (editTarget) {
-      updateAccount(editTarget.id, { ...data, value: Number(data.value) })
+      await updateAccount(editTarget.id, { ...data, value: Number(data.value) })
     } else {
-      addAccount(data)
+      await addAccount(data)
     }
     setEditTarget(null)
   }
@@ -35,11 +35,19 @@ export function FinancialPage() {
     setFormOpen(true)
   }
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (deleteTarget) {
-      deleteAccount(deleteTarget.id)
+      await deleteAccount(deleteTarget.id)
       setDeleteTarget(null)
     }
+  }
+
+  if (isLoading) {
+    return <div className="text-center py-12 text-gray-500">Carregando...</div>
+  }
+
+  if (error) {
+    return <div className="text-center py-12 text-red-500">Erro ao carregar contas.</div>
   }
 
   return (

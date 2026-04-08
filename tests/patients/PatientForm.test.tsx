@@ -1,5 +1,6 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { describe, it, expect } from 'vitest'
+import { render, screen, waitFor } from '@testing-library/react'
+import { userEvent } from '@testing-library/user-event'
 import { PatientFormModal } from '../../src/components/patients/PatientFormModal'
 
 const noop = () => {}
@@ -11,20 +12,12 @@ function renderModal() {
       onClose={noop}
       onSave={noop}
       patient={null}
-      isCpfTaken={() => false}
+      isCpfTaken={async () => false}
     />,
   )
 }
 
 describe('PatientFormModal', () => {
-  beforeEach(() => {
-    localStorage.clear()
-  })
-
-  afterEach(() => {
-    localStorage.clear()
-  })
-
   it('renders all field labels', () => {
     renderModal()
 
@@ -39,20 +32,27 @@ describe('PatientFormModal', () => {
     }
   })
 
-  it('shows required error messages on empty submit', () => {
+  it('shows required error messages on empty submit', async () => {
     renderModal()
 
-    fireEvent.click(screen.getByText('Cadastrar paciente'))
+    const user = userEvent.setup()
+    await user.click(screen.getByText('Cadastrar paciente'))
 
-    expect(screen.getAllByText('Campo obrigatório').length).toBeGreaterThanOrEqual(10)
+    await waitFor(() => {
+      expect(screen.getAllByText('Campo obrigatório').length).toBeGreaterThanOrEqual(10)
+    })
   })
 
-  it('shows CPF error for invalid CPF', () => {
+  it('shows CPF error for invalid CPF', async () => {
     renderModal()
 
-    fireEvent.change(screen.getByLabelText('CPF'), { target: { value: '11111111111' } })
-    fireEvent.click(screen.getByText('Cadastrar paciente'))
+    const user = userEvent.setup()
+    await user.clear(screen.getByLabelText('CPF'))
+    await user.type(screen.getByLabelText('CPF'), '11111111111')
+    await user.click(screen.getByText('Cadastrar paciente'))
 
-    expect(screen.getByText('CPF inválido')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByText('CPF inválido')).toBeInTheDocument()
+    })
   })
 })

@@ -1,65 +1,46 @@
-import { useMemo, useCallback } from 'react'
-import { useLocalStorage } from './useLocalStorage'
-import { isOverdue } from '../utils/date'
-import type { Account, AccountWithDerived, AccountType, AccountSummaryData, AccountFormData } from '../types/models'
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
+import * as accountService from '../services/accountService'
+import type { AccountType, AccountFormData } from '../types/models'
 
 export function useAccounts(type: AccountType) {
-  const key = type === 'payable' ? 'accounts_payable' : 'accounts_receivable'
-  const [accounts, setAccounts] = useLocalStorage<Account[]>(key, [])
+  const queryClient = useQueryClient()
 
-  const accountsWithOverdue = useMemo<AccountWithDerived[]>(
-    () =>
-      accounts.map((acc) => ({
-        ...acc,
-        derivedStatus:
-          acc.status === 'pending' && isOverdue(acc.dueDate) ? 'overdue' as const : acc.status,
-      })),
-    [accounts],
-  )
+  const { data: accounts = [], isLoading, error } = useQuery({
+    queryKey: ['accounts', type],
+    queryFn: () => accountService.getAccounts(type),
+    placeholderData: keepPreviousData,
+  })
 
-  const summary = useMemo<AccountSummaryData>(() => {
-    let totalPending = 0
-    let totalPaid = 0
-    for (const acc of accountsWithOverdue) {
-      const val = Number(acc.value) || 0
-      if (acc.derivedStatus === 'pending' || acc.derivedStatus === 'overdue') {
-        totalPending += val
-      } else if (acc.derivedStatus === 'paid') {
-        totalPaid += val
-      }
-    }
-    return { totalPending, totalPaid }
-  }, [accountsWithOverdue])
+  const { data: summary = { totalPending: 0, totalPaid: 0 } } = useQuery({
+    queryKey: ['accounts', type, 'summary'],
+    queryFn: () => accountService.getAccountSummary(type),
+    placeholderData: keepPreviousData,
+  })
 
-  const addAccount = useCallback(
-    (data: AccountFormData): Account => {
-      const account: Account = {
-        ...data,
-        value: Number(data.value),
-        id: crypto.randomUUID(),
-        createdAt: new Date().toISOString(),
-      }
-      setAccounts((prev) => [...prev, account])
-      return account
-    },
-    [setAccounts],
-  )
+  const addMutation = useMutation({
+    mutationFn: (data: AccountFormData) => accountService.createAccount(type, data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['accounts', type] }),
+  })
 
-  const updateAccount = useCallback(
-    (id: string, data: Partial<Account>): void => {
-      setAccounts((prev) =>
-        prev.map((a) => (a.id === id ? { ...a, ...data } : a)),
-      )
-    },
-    [setAccounts],
-  )
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<AccountFormData> }) =>
+      accountService.updateAccount(type, id, data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['accounts', type] }),
+  })
 
-  const deleteAccount = useCallback(
-    (id: string): void => {
-      setAccounts((prev) => prev.filter((a) => a.id !== id))
-    },
-    [setAccounts],
-  )
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => accountService.deleteAccount(type, id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['accounts', type] }),
+  })
 
-  return { accounts: accountsWithOverdue, summary, addAccount, updateAccount, deleteAccount }
+  return {
+    accounts,
+    summary,
+    isLoading,
+    error,
+    addAccount: (data: AccountFormData) => addMutation.mutateAsync(data),
+    updateAccount: (id: string, data: Partial<AccountFormData>) =>
+      updateMutation.mutateAsync({ id, data }),
+    deleteAccount: (id: string) => deleteMutation.mutateAsync(id),
+  }
 }
