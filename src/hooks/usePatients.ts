@@ -1,57 +1,53 @@
-import { useCallback } from 'react'
-import { useLocalStorage } from './useLocalStorage'
-import { readStorage, writeStorage } from '../utils/storage'
-import type { Patient, PatientFormValues, Account } from '../types/models'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import * as patientService from '../services/patientService'
+import type { Patient, PatientFormValues } from '../types/models'
 
 export function usePatients() {
-  const [patients, setPatients] = useLocalStorage<Patient[]>('patients', [])
+  const queryClient = useQueryClient()
 
-  const getPatientById = useCallback(
-    (id: string): Patient | null => patients.find((p) => p.id === id) || null,
-    [patients],
-  )
+  const { data: patients = [], isLoading, error } = useQuery({
+    queryKey: ['patients'],
+    queryFn: patientService.getPatients,
+  })
 
-  const isCpfTaken = useCallback(
-    (cpf: string, currentId: string | null = null): boolean => {
-      const normalized = cpf.replace(/\D/g, '')
-      return patients.some(
-        (p) => p.cpf.replace(/\D/g, '') === normalized && p.id !== currentId,
-      )
+  const getPatientById = (id: string): Patient | null =>
+    patients.find((p) => p.id === id) ?? null
+
+  const isCpfTaken = async (
+    cpf: string,
+    currentId: string | null = null,
+  ): Promise<boolean> => {
+    return patientService.checkCpf(cpf, currentId ?? undefined)
+  }
+
+  const addMutation = useMutation({
+    mutationFn: (data: PatientFormValues) => patientService.createPatient(data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['patients'] }),
+  })
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<PatientFormValues> }) =>
+      patientService.updatePatient(id, data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['patients'] }),
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => patientService.deletePatient(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['patients'] })
+      queryClient.invalidateQueries({ queryKey: ['accounts'] })
     },
-    [patients],
-  )
+  })
 
-  const addPatient = useCallback(
-    (data: PatientFormValues): Patient => {
-      const patient: Patient = { ...data, id: crypto.randomUUID(), createdAt: new Date().toISOString() }
-      setPatients((prev) => [...prev, patient])
-      return patient
-    },
-    [setPatients],
-  )
-
-  const updatePatient = useCallback(
-    (id: string, data: Partial<Patient>): void => {
-      setPatients((prev) =>
-        prev.map((p) => (p.id === id ? { ...p, ...data } : p)),
-      )
-    },
-    [setPatients],
-  )
-
-  const deletePatient = useCallback(
-    (id: string): void => {
-      setPatients((prev) => prev.filter((p) => p.id !== id))
-      for (const key of ['accounts_payable', 'accounts_receivable'] as const) {
-        const accounts = readStorage<Account[]>(key, [])
-        const updated = accounts.map((a) =>
-          a.patientId === id ? { ...a, patientId: '' } : a,
-        )
-        writeStorage(key, updated)
-      }
-    },
-    [setPatients],
-  )
-
-  return { patients, getPatientById, addPatient, updatePatient, deletePatient, isCpfTaken }
+  return {
+    patients,
+    isLoading,
+    error,
+    getPatientById,
+    isCpfTaken,
+    addPatient: (data: PatientFormValues) => addMutation.mutateAsync(data),
+    updatePatient: (id: string, data: Partial<PatientFormValues>) =>
+      updateMutation.mutateAsync({ id, data }),
+    deletePatient: (id: string) => deleteMutation.mutateAsync(id),
+  }
 }

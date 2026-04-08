@@ -12,7 +12,7 @@ import type { Patient, PatientFormValues } from '../types/models'
 
 export function PatientsPage() {
   const navigate = useNavigate()
-  const { patients, deletePatient, addPatient, updatePatient, isCpfTaken, getPatientById } = usePatients()
+  const { patients, deletePatient, addPatient, updatePatient, isCpfTaken, getPatientById, isLoading, error } = usePatients()
   const [search, setSearch] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<Patient | null>(null)
   const [formOpen, setFormOpen] = useState(false)
@@ -31,9 +31,9 @@ export function PatientsPage() {
 
   const { pagedItems, currentPage, totalPages, next, prev } = usePagination(filtered)
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (deleteTarget) {
-      deletePatient(deleteTarget.id)
+      await deletePatient(deleteTarget.id)
       setDeleteTarget(null)
     }
   }
@@ -43,12 +43,20 @@ export function PatientsPage() {
     setFormOpen(true)
   }
 
-  const handleSave = (data: PatientFormValues) => {
+  const handleSave = async (data: PatientFormValues) => {
     if (editTarget) {
-      updatePatient(editTarget.id, data)
+      await updatePatient(editTarget.id, data)
     } else {
-      addPatient(data)
+      await addPatient(data)
     }
+  }
+
+  if (isLoading) {
+    return <div className="text-center py-12 text-gray-500">Carregando...</div>
+  }
+
+  if (error) {
+    return <div className="text-center py-12 text-red-500">Erro ao carregar pacientes.</div>
   }
 
   return (
