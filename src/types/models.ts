@@ -21,6 +21,44 @@ export interface Patient {
 
 export type PatientFormValues = Omit<Patient, 'id' | 'createdAt'>
 
+export interface BackendPatient {
+  id: string
+  fullName: string
+  birthDate: string
+  cpf: string
+  rg: string
+  gender: string
+  maritalStatus: string
+  phone: string
+  email: string
+  address: {
+    street: string
+    number: string
+    complement: string
+    district: string
+    city: string
+    state: string
+    zipCode: string
+  }
+  healthPlan: string
+  age: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface PaginatedResponse<T> {
+  data: T[]
+  total: number
+  page: number
+  totalPages: number
+}
+
+export interface PatientQueryParams {
+  page?: number
+  limit?: number
+  search?: string
+}
+
 export type AccountStatus = 'pending' | 'paid'
 export type DerivedStatus = 'pending' | 'paid' | 'overdue'
 export type AccountType = 'payable' | 'receivable'

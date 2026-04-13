@@ -13,11 +13,7 @@ const emptyValues: Record<string, string> = {
 
 const requiredFields = ['name', 'birthdate', 'cpf']
 
-async function validate(
-  values: Record<string, string>,
-  isCpfTaken: (cpf: string, currentId: string | null) => Promise<boolean>,
-  currentId: string | null,
-): Promise<Record<string, string>> {
+function validate(values: Record<string, string>): Record<string, string> {
   const errors: Record<string, string> = {}
 
   for (const field of requiredFields) {
@@ -29,8 +25,6 @@ async function validate(
   if (values.cpf?.trim() && !errors.cpf) {
     if (!isValidCPF(values.cpf)) {
       errors.cpf = 'CPF inválido'
-    } else if (await isCpfTaken(values.cpf, currentId)) {
-      errors.cpf = 'CPF já cadastrado'
     }
   }
 
@@ -52,19 +46,17 @@ async function validate(
 interface PatientFormModalProps {
   open: boolean
   onClose: () => void
-  onSave: (data: PatientFormValues) => void | Promise<void>
+  onSave: (data: PatientFormValues) => Promise<string | undefined>
   patient: Patient | null
-  isCpfTaken: (cpf: string, currentId: string | null) => Promise<boolean>
 }
 
 interface PatientFormModalFormProps {
   patient: Patient | null
-  onSave: (data: PatientFormValues) => void | Promise<void>
+  onSave: (data: PatientFormValues) => Promise<string | undefined>
   onClose: () => void
-  isCpfTaken: (cpf: string, currentId: string | null) => Promise<boolean>
 }
 
-function PatientFormModalForm({ patient, onSave, onClose, isCpfTaken }: PatientFormModalFormProps) {
+function PatientFormModalForm({ patient, onSave, onClose }: PatientFormModalFormProps) {
   const [values, setValues] = useState<Record<string, string>>(() =>
     patient ? { ...emptyValues, ...patient } : emptyValues,
   )
@@ -80,11 +72,15 @@ function PatientFormModalForm({ patient, onSave, onClose, isCpfTaken }: PatientF
     e.preventDefault()
     setSubmitting(true)
     try {
-      const errs = await validate(values, isCpfTaken, patient?.id || null)
+      const errs = validate(values)
       setErrors(errs)
       if (Object.keys(errs).length > 0) return
 
-      await onSave(values as PatientFormValues)
+      const cpfError = await onSave(values as PatientFormValues)
+      if (cpfError) {
+        setErrors((prev) => ({ ...prev, cpf: cpfError }))
+        return
+      }
       onClose()
     } finally {
       setSubmitting(false)
@@ -106,7 +102,7 @@ function PatientFormModalForm({ patient, onSave, onClose, isCpfTaken }: PatientF
   )
 }
 
-export function PatientFormModal({ open, onClose, onSave, patient, isCpfTaken }: PatientFormModalProps) {
+export function PatientFormModal({ open, onClose, onSave, patient }: PatientFormModalProps) {
   return (
     <Modal open={open} onClose={onClose} title={patient ? 'Editar Paciente' : 'Novo Paciente'}>
       {open ? (
@@ -115,7 +111,6 @@ export function PatientFormModal({ open, onClose, onSave, patient, isCpfTaken }:
           patient={patient}
           onSave={onSave}
           onClose={onClose}
-          isCpfTaken={isCpfTaken}
         />
       ) : null}
     </Modal>

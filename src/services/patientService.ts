@@ -1,33 +1,30 @@
-import { api } from './api'
-import type { Patient, PatientFormValues } from '../types/models'
+import { apiV1 } from './api'
+import { fromBackend, toBackend } from './patientMapper'
+import type { Patient, PatientFormValues, BackendPatient, PaginatedResponse, PatientQueryParams } from '../types/models'
 
-export async function getPatients(): Promise<Patient[]> {
-  const { data } = await api.get<Patient[]>('/patients')
-  return data
+export async function getPatients(params: PatientQueryParams = {}): Promise<PaginatedResponse<Patient>> {
+  const { data } = await apiV1.get<PaginatedResponse<BackendPatient>>('/patients', { params })
+  return {
+    ...data,
+    data: data.data.map(fromBackend),
+  }
 }
 
 export async function getPatientById(id: string): Promise<Patient> {
-  const { data } = await api.get<Patient>(`/patients/${id}`)
-  return data
+  const { data } = await apiV1.get<BackendPatient>(`/patients/${id}`)
+  return fromBackend(data)
 }
 
-export async function createPatient(data: PatientFormValues): Promise<Patient> {
-  const { data: patient } = await api.post<Patient>('/patients', data)
-  return patient
+export async function createPatient(formValues: PatientFormValues): Promise<Patient> {
+  const { data } = await apiV1.post<BackendPatient>('/patients', toBackend(formValues))
+  return fromBackend(data)
 }
 
-export async function updatePatient(id: string, data: Partial<PatientFormValues>): Promise<Patient> {
-  const { data: patient } = await api.put<Patient>(`/patients/${id}`, data)
-  return patient
+export async function updatePatient(id: string, formValues: Partial<PatientFormValues>): Promise<Patient> {
+  const { data } = await apiV1.put<BackendPatient>(`/patients/${id}`, toBackend(formValues as PatientFormValues))
+  return fromBackend(data)
 }
 
 export async function deletePatient(id: string): Promise<void> {
-  await api.delete(`/patients/${id}`)
-}
-
-export async function checkCpf(cpf: string, excludeId?: string): Promise<boolean> {
-  const params: Record<string, string> = { cpf }
-  if (excludeId) params.excludeId = excludeId
-  const { data } = await api.get<{ taken: boolean }>('/patients/check-cpf', { params })
-  return data.taken
+  await apiV1.delete(`/patients/${id}`)
 }

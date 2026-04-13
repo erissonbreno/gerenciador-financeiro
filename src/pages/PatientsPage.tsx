@@ -1,35 +1,33 @@
-import { useState, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { usePatients } from '../hooks/usePatients'
-import { usePagination } from '../hooks/usePagination'
+import { useDebounce } from '../hooks/useDebounce'
 import { PatientTable } from '../components/patients/PatientTable'
 import { PatientFormModal } from '../components/patients/PatientFormModal'
 import { SearchBar } from '../components/common/SearchBar'
 import { Pagination } from '../components/common/Pagination'
 import { ConfirmDialog } from '../components/common/ConfirmDialog'
 import { Button } from '../components/common/Button'
+import { isDuplicateCpf } from '../utils/apiErrors'
 import type { Patient, PatientFormValues } from '../types/models'
 
 export function PatientsPage() {
   const navigate = useNavigate()
-  const { patients, deletePatient, addPatient, updatePatient, isCpfTaken, getPatientById, isLoading, error } = usePatients()
   const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
+  const debouncedSearch = useDebounce(search, 300)
+
+  const { patients, totalPages, deletePatient, addPatient, updatePatient, isLoading, error } =
+    usePatients({ page, limit: 10, search: debouncedSearch || undefined })
+
   const [deleteTarget, setDeleteTarget] = useState<Patient | null>(null)
   const [formOpen, setFormOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<Patient | null>(null)
+  const [formError, setFormError] = useState<string | null>(null)
 
-  const filtered = useMemo(() => {
-    if (!search.trim()) return patients
-    const q = search.toLowerCase()
-    return patients.filter(
-      (p) =>
-        p.name.toLowerCase().includes(q) ||
-        p.cpf.includes(q) ||
-        p.phone.includes(q),
-    )
-  }, [patients, search])
-
-  const { pagedItems, currentPage, totalPages, next, prev } = usePagination(filtered)
+  useEffect(() => {
+    setPage(1)
+  }, [debouncedSearch])
 
   const handleDelete = async () => {
     if (deleteTarget) {
@@ -40,14 +38,23 @@ export function PatientsPage() {
 
   const openNewForm = () => {
     setEditTarget(null)
+    setFormError(null)
     setFormOpen(true)
   }
 
-  const handleSave = async (data: PatientFormValues) => {
-    if (editTarget) {
-      await updatePatient(editTarget.id, data)
-    } else {
-      await addPatient(data)
+  const handleSave = async (data: PatientFormValues): Promise<string | undefined> => {
+    try {
+      if (editTarget) {
+        await updatePatient(editTarget.id, data)
+      } else {
+        await addPatient(data)
+      }
+      return undefined
+    } catch (err) {
+      if (isDuplicateCpf(err)) {
+        return 'CPF já cadastrado'
+      }
+      throw err
     }
   }
 
@@ -72,15 +79,20 @@ export function PatientsPage() {
 
       <div className="bg-white rounded-xl shadow-sm">
         <PatientTable
-          patients={pagedItems}
+          patients={patients}
           onView={(id) => navigate(`/patients/${id}`)}
-          onEdit={(id) => { setEditTarget(getPatientById(id)!); setFormOpen(true) }}
+          onEdit={(id) => { setEditTarget(patients.find(p => p.id === id)!); setFormError(null); setFormOpen(true) }}
           onDelete={(patient) => setDeleteTarget(patient)}
           onNew={openNewForm}
         />
       </div>
 
-      <Pagination currentPage={currentPage} totalPages={totalPages} onPrev={prev} onNext={next} />
+      <Pagination
+        currentPage={page}
+        totalPages={totalPages}
+        onPrev={() => setPage((p) => Math.max(p - 1, 1))}
+        onNext={() => setPage((p) => Math.min(p + 1, totalPages))}
+      />
 
       <ConfirmDialog
         open={!!deleteTarget}
@@ -95,7 +107,6 @@ export function PatientsPage() {
         onClose={() => setFormOpen(false)}
         onSave={handleSave}
         patient={editTarget}
-        isCpfTaken={isCpfTaken}
       />
     </div>
   )

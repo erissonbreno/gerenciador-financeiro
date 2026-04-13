@@ -1,8 +1,6 @@
 import { readStorage, writeStorage } from '../utils/storage'
 import { isOverdue } from '../utils/date'
 import type {
-  Patient,
-  PatientFormValues,
   Account,
   AccountWithDerived,
   AccountType,
@@ -10,12 +8,10 @@ import type {
   AccountFormData,
 } from '../types/models'
 
-let patients: Patient[] = readStorage<Patient[]>('patients', [])
 let accountsPayable: Account[] = readStorage<Account[]>('accounts_payable', [])
 let accountsReceivable: Account[] = readStorage<Account[]>('accounts_receivable', [])
 
 function persist() {
-  writeStorage('patients', patients)
   writeStorage('accounts_payable', accountsPayable)
   writeStorage('accounts_receivable', accountsReceivable)
 }
@@ -57,66 +53,6 @@ function computeSummary(accounts: AccountWithDerived[]): AccountSummaryData {
 }
 
 export const db = {
-  patients: {
-    findAll(): Patient[] {
-      return patients
-    },
-
-    findById(id: string): Patient | undefined {
-      return patients.find((p) => p.id === id)
-    },
-
-    create(
-      data: PatientFormValues,
-      overrides?: { id?: string; createdAt?: string },
-    ): Patient {
-      const patient: Patient = {
-        ...data,
-        id: overrides?.id ?? crypto.randomUUID(),
-        createdAt: overrides?.createdAt ?? new Date().toISOString(),
-      }
-      patients = [...patients, patient]
-      persist()
-      return patient
-    },
-
-    update(id: string, data: Partial<PatientFormValues>): Patient | undefined {
-      let updated: Patient | undefined
-      patients = patients.map((p) => {
-        if (p.id === id) {
-          updated = { ...p, ...data }
-          return updated
-        }
-        return p
-      })
-      if (updated) persist()
-      return updated
-    },
-
-    delete(id: string): boolean {
-      const len = patients.length
-      patients = patients.filter((p) => p.id !== id)
-      if (patients.length === len) return false
-
-      // Cascade: clear patientId in accounts
-      accountsPayable = accountsPayable.map((a) =>
-        a.patientId === id ? { ...a, patientId: '' } : a,
-      )
-      accountsReceivable = accountsReceivable.map((a) =>
-        a.patientId === id ? { ...a, patientId: '' } : a,
-      )
-      persist()
-      return true
-    },
-
-    checkCpf(cpf: string, excludeId?: string): boolean {
-      const normalized = cpf.replace(/\D/g, '')
-      return patients.some(
-        (p) => p.cpf.replace(/\D/g, '') === normalized && p.id !== excludeId,
-      )
-    },
-  },
-
   accounts: {
     findAll(type: AccountType): AccountWithDerived[] {
       return withDerived(getAccounts(type))
@@ -166,7 +102,6 @@ export const db = {
   },
 
   reset() {
-    patients = []
     accountsPayable = []
     accountsReceivable = []
     localStorage.clear()
