@@ -11,10 +11,7 @@ const emptyValues: Record<string, string> = {
   city: '', state: '', zip: '', healthPlan: '',
 }
 
-const requiredFields = [
-  'name', 'birthdate', 'cpf', 'gender', 'maritalStatus', 'phone',
-  'street', 'number', 'neighborhood', 'city', 'state', 'zip',
-]
+const requiredFields = ['name', 'birthdate', 'cpf']
 
 async function validate(
   values: Record<string, string>,

@@ -3,6 +3,7 @@ import { Modal } from '../common/Modal'
 import { Input } from '../common/Input'
 import { Select } from '../common/Select'
 import { Button } from '../common/Button'
+import { CurrencyInput } from '../common/CurrencyInput'
 import { accountCategories } from '../../constants/accountCategories'
 import { isOverdue } from '../../utils/date'
 import type { AccountFormData, AccountWithDerived, Patient, AccountStatus } from '../../types/models'
@@ -78,7 +79,14 @@ function AccountFormModalForm({ account, patients, onSave, onClose }: AccountFor
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <Input label="Descrição" error={errors.description} {...handle('description')} />
-      <Input label="Valor (R$)" type="number" step="0.01" min="0" error={errors.value} {...handle('value')} />
+      <CurrencyInput
+        label="Valor (R$)"
+        id="value"
+        name="value"
+        error={errors.value}
+        value={form.value}
+        onValueChange={(values) => handleChange('value', String(values.floatValue ?? ''))}
+      />
       <Input label="Data de vencimento" type="date" error={errors.dueDate} {...handle('dueDate')} />
       {warning && <p className="text-xs text-yellow-600">{warning}</p>}
       <Select label="Status" options={statusOpts} error={errors.status} {...handle('status')} />
