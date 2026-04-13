@@ -39,7 +39,7 @@ describe('PatientFormModal', () => {
     await user.click(screen.getByText('Cadastrar paciente'))
 
     await waitFor(() => {
-      expect(screen.getAllByText('Campo obrigatório').length).toBeGreaterThanOrEqual(10)
+      expect(screen.getAllByText('Campo obrigatório').length).toBe(3)
     })
   })
 

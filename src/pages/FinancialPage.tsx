@@ -12,7 +12,7 @@ import { Button } from '../components/common/Button'
 import type { AccountType, AccountWithDerived, AccountFormData } from '../types/models'
 
 export function FinancialPage() {
-  const [activeTab, setActiveTab] = useState<AccountType>('payable')
+  const [activeTab, setActiveTab] = useState<AccountType>('receivable')
   const { accounts, summary, addAccount, updateAccount, deleteAccount, isLoading, error } = useAccounts(activeTab)
   const { patients } = usePatients()
   const { pagedItems, currentPage, totalPages, next, prev } = usePagination(accounts)

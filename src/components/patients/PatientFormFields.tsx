@@ -1,6 +1,7 @@
 import React from 'react'
 import { Input } from '../common/Input'
 import { Select } from '../common/Select'
+import { CpfInput, NumericInput, PhoneInput, CepInput } from '../common/MaskedInput'
 import { brazilStates } from '../../constants/brazilStates'
 
 const genderOptions = [
@@ -33,15 +34,23 @@ export function PatientFormFields({ values, errors, onChange, onBlur }: PatientF
     onBlur: onBlur ? () => onBlur(field) : undefined,
   })
 
+  const handleMasked = (field: string) => ({
+    id: field,
+    name: field,
+    value: values[field] || '',
+    onAccept: (val: string) => onChange(field, val),
+    error: errors[field],
+  })
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <Input label="Nome completo" error={errors.name} {...handle('name')} className="md:col-span-2" />
       <Input label="Data de nascimento" type="date" error={errors.birthdate} {...handle('birthdate')} />
-      <Input label="CPF" error={errors.cpf} {...handle('cpf')} placeholder="000.000.000-00" />
-      <Input label="RG" error={errors.rg} {...handle('rg')} />
+      <CpfInput label="CPF" {...handleMasked('cpf')} />
+      <NumericInput label="RG" {...handleMasked('rg')} />
       <Select label="Gênero" options={genderOptions} placeholder="Selecione" error={errors.gender} {...handle('gender')} />
       <Select label="Estado civil" options={maritalOptions} placeholder="Selecione" error={errors.maritalStatus} {...handle('maritalStatus')} />
-      <Input label="Telefone" error={errors.phone} {...handle('phone')} placeholder="(00) 00000-0000" />
+      <PhoneInput label="Telefone" {...handleMasked('phone')} />
       <Input label="E-mail" type="email" error={errors.email} {...handle('email')} />
 
       <div className="md:col-span-2 mt-2">
@@ -53,7 +62,7 @@ export function PatientFormFields({ values, errors, onChange, onBlur }: PatientF
       <Input label="Bairro" error={errors.neighborhood} {...handle('neighborhood')} />
       <Input label="Cidade" error={errors.city} {...handle('city')} />
       <Select label="Estado" options={[...brazilStates]} placeholder="Selecione" error={errors.state} {...handle('state')} />
-      <Input label="CEP" error={errors.zip} {...handle('zip')} placeholder="00000-000" />
+      <CepInput label="CEP" {...handleMasked('zip')} />
 
       <Input label="Plano de Saúde" error={errors.healthPlan} {...handle('healthPlan')} className="md:col-span-2" />
     </div>
