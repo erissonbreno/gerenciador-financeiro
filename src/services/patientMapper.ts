@@ -16,7 +16,7 @@ export function fromBackend(bp: BackendPatient): Patient {
   return {
     id: bp.id,
     name: bp.fullName,
-    birthdate: bp.birthDate,
+    birthdate: bp.birthDate?.split('T')[0] ?? '',
     cpf: bp.cpf,
     rg: bp.rg,
     gender: genderToFrontend[bp.gender] ?? bp.gender,
