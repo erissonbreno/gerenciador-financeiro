@@ -1,6 +1,7 @@
 export function formatDate(dateISO: string): string {
   if (!dateISO) return ''
-  const [year, month, day] = dateISO.split('-')
+  const [datePart] = dateISO.split('T')
+  const [year, month, day] = datePart.split('-')
   return `${day}/${month}/${year}`
 }
 
