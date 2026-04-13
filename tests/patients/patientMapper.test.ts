@@ -5,7 +5,7 @@ import type { BackendPatient, PatientFormValues } from '../../src/types/models'
 const sampleBackendPatient: BackendPatient = {
   id: '1',
   fullName: 'Maria Silva',
-  birthdate: '1990-01-15',
+  birthDate: '1990-01-15',
   cpf: '52998224725',
   rg: '123456',
   gender: 'feminino',
@@ -29,7 +29,7 @@ const sampleBackendPatient: BackendPatient = {
 
 const sampleFormValues: PatientFormValues = {
   name: 'Maria Silva',
-  birthdate: '1990-01-15',
+  birthDate: '1990-01-15',
   cpf: '52998224725',
   rg: '123456',
   gender: 'feminino',

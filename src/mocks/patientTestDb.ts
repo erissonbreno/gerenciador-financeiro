@@ -40,7 +40,7 @@ export const patientTestDb = {
     const patient: BackendPatient = {
       id: data.id ?? crypto.randomUUID(),
       fullName: data.fullName,
-      birthdate: data.birthdate ?? '',
+      birthDate: data.birthDate ?? '',
       cpf: data.cpf,
       rg: data.rg ?? '',
       gender: data.gender ?? '',

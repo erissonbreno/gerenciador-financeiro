@@ -10,7 +10,7 @@ function seedPatient(overrides: Partial<Parameters<typeof patientTestDb.create>[
     fullName: 'Maria Silva',
     cpf: '52998224725',
     phone: '(11) 99999-0000',
-    birthdate: '1990-01-15',
+    birthDate: '1990-01-15',
     rg: '123456',
     gender: 'feminino',
     maritalStatus: 'solteiro',

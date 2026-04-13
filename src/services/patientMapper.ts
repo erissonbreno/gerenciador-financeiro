@@ -1,13 +1,25 @@
 import type { Patient, PatientFormValues, BackendPatient } from '../types/models'
 
+const genderToFrontend: Record<string, string> = {
+  MALE: 'masculino',
+  FEMALE: 'feminino',
+  OTHER: 'outro',
+}
+
+const genderToBackend: Record<string, string> = {
+  masculino: 'MALE',
+  feminino: 'FEMALE',
+  outro: 'OTHER',
+}
+
 export function fromBackend(bp: BackendPatient): Patient {
   return {
     id: bp.id,
     name: bp.fullName,
-    birthdate: bp.birthdate,
+    birthdate: bp.birthDate,
     cpf: bp.cpf,
     rg: bp.rg,
-    gender: bp.gender,
+    gender: genderToFrontend[bp.gender] ?? bp.gender,
     maritalStatus: bp.maritalStatus,
     phone: bp.phone,
     email: bp.email,
@@ -26,10 +38,10 @@ export function fromBackend(bp: BackendPatient): Patient {
 export function toBackend(fv: PatientFormValues): object {
   return {
     fullName: fv.name,
-    birthdate: fv.birthdate,
+    birthDate: fv.birthdate,
     cpf: fv.cpf,
     rg: fv.rg,
-    gender: fv.gender,
+    gender: genderToBackend[fv.gender] ?? fv.gender,
     maritalStatus: fv.maritalStatus,
     phone: fv.phone,
     email: fv.email,

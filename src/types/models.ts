@@ -24,7 +24,7 @@ export type PatientFormValues = Omit<Patient, 'id' | 'createdAt'>
 export interface BackendPatient {
   id: string
   fullName: string
-  birthdate: string
+  birthDate: string
   cpf: string
   rg: string
   gender: string
