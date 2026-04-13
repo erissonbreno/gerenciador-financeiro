@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { usePatients } from '../hooks/usePatients'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import * as patientService from '../services/patientService'
 import { Button } from '../components/common/Button'
 import { ConfirmDialog } from '../components/common/ConfirmDialog'
 import { PatientFormModal } from '../components/patients/PatientFormModal'
 import { formatCPF } from '../utils/cpf'
 import { formatDate } from '../utils/date'
+import { isDuplicateCpf } from '../utils/apiErrors'
 import type { PatientFormValues } from '../types/models'
 
 function Field({ label, value }: { label: string; value?: string }) {
@@ -20,32 +22,47 @@ function Field({ label, value }: { label: string; value?: string }) {
 export function PatientDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { getPatientById, deletePatient, updatePatient, isCpfTaken, isLoading, error } = usePatients()
+  const queryClient = useQueryClient()
   const [showDelete, setShowDelete] = useState(false)
   const [formOpen, setFormOpen] = useState(false)
+
+  const { data: patient, isLoading, error } = useQuery({
+    queryKey: ['patients', id],
+    queryFn: () => patientService.getPatientById(id!),
+    enabled: !!id,
+  })
 
   if (isLoading) {
     return <div className="text-center py-12 text-gray-500">Carregando...</div>
   }
 
-  if (error) {
-    return <div className="text-center py-12 text-red-500">Erro ao carregar paciente.</div>
-  }
-
-  const patient = getPatientById(id!)
-
-  if (!patient) {
+  if (error || !patient) {
     return (
       <div className="text-center py-12 text-gray-500">
-        <p>Paciente n&atilde;o encontrado.</p>
+        <p>Paciente não encontrado.</p>
         <Button className="mt-4" onClick={() => navigate('/patients')}>Voltar</Button>
       </div>
     )
   }
 
   const handleDelete = async () => {
-    await deletePatient(id!)
+    await patientService.deletePatient(id!)
+    queryClient.invalidateQueries({ queryKey: ['patients'] })
+    queryClient.invalidateQueries({ queryKey: ['accounts'] })
     navigate('/patients')
+  }
+
+  const handleSave = async (data: PatientFormValues): Promise<string | undefined> => {
+    try {
+      await patientService.updatePatient(id!, data)
+      queryClient.invalidateQueries({ queryKey: ['patients'] })
+      return undefined
+    } catch (err) {
+      if (isDuplicateCpf(err)) {
+        return 'CPF já cadastrado'
+      }
+      throw err
+    }
   }
 
   return (
@@ -64,16 +81,16 @@ export function PatientDetailPage() {
           <Field label="Data de nascimento" value={formatDate(patient.birthdate)} />
           <Field label="CPF" value={formatCPF(patient.cpf)} />
           <Field label="RG" value={patient.rg} />
-          <Field label="G&ecirc;nero" value={patient.gender} />
+          <Field label="Gênero" value={patient.gender} />
           <Field label="Estado civil" value={patient.maritalStatus} />
           <Field label="Telefone" value={patient.phone} />
           <Field label="E-mail" value={patient.email} />
         </div>
 
-        <h3 className="text-sm font-semibold text-gray-600 mt-6 mb-4">Endere&ccedil;o</h3>
+        <h3 className="text-sm font-semibold text-gray-600 mt-6 mb-4">Endereço</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <Field label="Logradouro" value={patient.street} />
-          <Field label="N&uacute;mero" value={patient.number} />
+          <Field label="Número" value={patient.number} />
           <Field label="Complemento" value={patient.complement} />
           <Field label="Bairro" value={patient.neighborhood} />
           <Field label="Cidade" value={patient.city} />
@@ -81,14 +98,14 @@ export function PatientDetailPage() {
           <Field label="CEP" value={patient.zip} />
         </div>
 
-        <h3 className="text-sm font-semibold text-gray-600 mt-6 mb-4">Informa&ccedil;&otilde;es adicionais</h3>
+        <h3 className="text-sm font-semibold text-gray-600 mt-6 mb-4">Informações adicionais</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Field label="Plano de Sa&uacute;de" value={patient.healthPlan} />
+          <Field label="Plano de Saúde" value={patient.healthPlan} />
         </div>
       </div>
 
       <div className="mt-4">
-        <Button variant="secondary" onClick={() => navigate('/patients')}>Voltar &agrave; lista</Button>
+        <Button variant="secondary" onClick={() => navigate('/patients')}>Voltar à lista</Button>
       </div>
 
       <ConfirmDialog
@@ -102,9 +119,8 @@ export function PatientDetailPage() {
       <PatientFormModal
         open={formOpen}
         onClose={() => setFormOpen(false)}
-        onSave={async (data: PatientFormValues) => { await updatePatient(id!, data) }}
+        onSave={handleSave}
         patient={patient}
-        isCpfTaken={isCpfTaken}
       />
     </div>
   )

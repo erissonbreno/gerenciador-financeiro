@@ -1,4 +1,8 @@
 import { setupWorker } from 'msw/browser'
-import { handlers } from './handlers'
+import { http, passthrough } from 'msw'
+import { accountHandlers } from './handlers'
 
-export const worker = setupWorker(...handlers)
+export const worker = setupWorker(
+  http.all('/api/v1/*', () => passthrough()),
+  ...accountHandlers,
+)
