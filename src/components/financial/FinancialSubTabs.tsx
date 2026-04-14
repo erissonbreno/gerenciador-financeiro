@@ -1,12 +1,13 @@
-import type { AccountType } from '../../types/models'
+export type FinancialTab = 'payments' | 'convenios'
 
-const tabs: { key: AccountType; label: string }[] = [
-  { key: 'receivable', label: 'Contas a Receber' },
+const tabs: { key: FinancialTab; label: string }[] = [
+  { key: 'payments', label: 'Pagamentos' },
+  { key: 'convenios', label: 'Convênios' },
 ]
 
 interface FinancialSubTabsProps {
-  activeTab: AccountType
-  onChange: (tab: AccountType) => void
+  activeTab: FinancialTab
+  onChange: (tab: FinancialTab) => void
 }
 
 export function FinancialSubTabs({ activeTab, onChange }: FinancialSubTabsProps) {

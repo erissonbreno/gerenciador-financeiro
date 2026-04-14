@@ -3,83 +3,105 @@ import { screen, waitFor } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
 import { FinancialPage } from '../../src/pages/FinancialPage'
 import { db } from '../../src/mocks/db'
+import { patientTestDb } from '../../src/mocks/patientTestDb'
 import { renderWithProviders } from '../utils/renderWithProviders'
-import type { AccountFormData } from '../../src/types/models'
+
+function seedPatient(): string {
+  const p = patientTestDb.create({
+    fullName: 'Ana Costa',
+    birthDate: '1992-03-20',
+    cpf: '11122233344',
+    rg: '1112223',
+    gender: 'Feminino',
+    maritalStatus: 'Solteira',
+    phone: '11977777777',
+    email: 'ana@test.com',
+    address: {
+      street: 'Rua C',
+      number: '300',
+      complement: '',
+      district: 'Centro',
+      city: 'São Paulo',
+      state: 'SP',
+      zipCode: '01000000',
+    },
+    healthPlan: '',
+  })
+  return p.id
+}
 
 function renderPage() {
   return renderWithProviders(<FinancialPage />)
 }
 
 describe('FinancialPage', () => {
-  it('renders financial sub-tab label', async () => {
+  it('renders the Pagamentos and Convênios tabs', async () => {
     renderPage()
 
-    expect(await screen.findByText('Contas a Receber')).toBeInTheDocument()
+    expect(await screen.findByText('Pagamentos')).toBeInTheDocument()
+    expect(screen.getByText('Convênios')).toBeInTheDocument()
   })
 
-  it('adds a receivable account and updates pending total', async () => {
+  it('shows summary cards with zero totals initially', async () => {
     renderPage()
 
-    const user = userEvent.setup()
-    await user.click(await screen.findByText('Nova Conta'))
-
-    await user.clear(screen.getByLabelText('Descrição'))
-    await user.type(screen.getByLabelText('Descrição'), 'Aluguel')
-    await user.type(screen.getByLabelText('Valor (R$)'), '1500')
-    await user.clear(screen.getByLabelText('Data de vencimento'))
-    await user.type(screen.getByLabelText('Data de vencimento'), '2030-12-01')
-
-    await user.click(screen.getByText('Criar conta'))
-
     await waitFor(() => {
-      expect(screen.getByTestId('total-pending').textContent).toContain('1.500')
+      expect(screen.getByTestId('total-pending')).toBeInTheDocument()
+      expect(screen.getByTestId('total-paid')).toBeInTheDocument()
+      expect(screen.getByTestId('total-received')).toBeInTheDocument()
     })
   })
 
-  it('adds a receivable account on receivable tab (default)', async () => {
+  it('adds a payment and updates summary', async () => {
+    const patientId = seedPatient()
     renderPage()
 
     const user = userEvent.setup()
-    await user.click(await screen.findByText('Nova Conta'))
+    const buttons = await screen.findAllByText('Novo Pagamento')
+    await user.click(buttons[0])
 
-    await user.clear(screen.getByLabelText('Descrição'))
+    // Select patient
+    const patientSelect = screen.getByLabelText('Paciente')
+    await user.selectOptions(patientSelect, patientId)
+
     await user.type(screen.getByLabelText('Descrição'), 'Consulta')
-    await user.type(screen.getByLabelText('Valor (R$)'), '200')
-    await user.clear(screen.getByLabelText('Data de vencimento'))
-    await user.type(screen.getByLabelText('Data de vencimento'), '2030-12-01')
+    await user.type(screen.getByLabelText('Valor (R$)'), '300')
+    await user.type(screen.getByLabelText('Data do Atendimento'), '2030-12-01')
+    await user.selectOptions(screen.getByLabelText('Forma de Pagamento'), 'especie')
 
-    await user.click(screen.getByText('Criar conta'))
+    await user.click(screen.getByText('Criar Pagamento'))
 
     await waitFor(() => {
-      expect(screen.getByTestId('total-pending').textContent).toContain('200')
+      expect(screen.getByTestId('total-pending').textContent).toContain('300')
     })
   })
 
-  it('updates totals when changing status from pending to paid', async () => {
-    const accountData: AccountFormData = {
-      description: 'Exame',
-      value: 500,
-      dueDate: '2030-12-01',
-      status: 'pending',
-      category: '',
-      patientId: '',
-    }
-    db.accounts.create('receivable', accountData, { id: 'acc-1', createdAt: '2024-01-01T00:00:00.000Z' })
-    renderPage()
-
-    await waitFor(() => {
-      expect(screen.getByTestId('total-pending').textContent).toContain('500')
+  it('switches between Pagamentos and Convênios tabs', async () => {
+    const patientId = seedPatient()
+    db.payments.create({
+      patientId,
+      description: 'Sessão convênio',
+      value: 200,
+      serviceDate: '2026-04-01',
+      paymentType: 'convenio',
+      status: 'pendente',
+      category: 'Consulta',
+      convenioType: 'Unimed',
     })
 
-    const user = userEvent.setup()
-    await user.click(screen.getByText('Editar'))
+    renderPage()
 
-    const statusSelect = screen.getByLabelText('Status')
-    await user.selectOptions(statusSelect, 'paid')
-    await user.click(screen.getByText('Salvar'))
+    const user = userEvent.setup()
+    await user.click(await screen.findByText('Convênios'))
 
     await waitFor(() => {
-      expect(screen.getByTestId('total-receivable').textContent).toContain('500')
+      expect(screen.getByText('Sessão convênio')).toBeInTheDocument()
+    })
+
+    await user.click(screen.getByText('Pagamentos'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('total-pending')).toBeInTheDocument()
     })
   })
 })

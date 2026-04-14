@@ -1,4 +1,4 @@
 import { setupServer } from 'msw/node'
-import { accountHandlers, patientHandlers } from './handlers'
+import { accountHandlers, patientHandlers, paymentHandlers } from './handlers'
 
-export const server = setupServer(...accountHandlers, ...patientHandlers)
+export const server = setupServer(...accountHandlers, ...patientHandlers, ...paymentHandlers)

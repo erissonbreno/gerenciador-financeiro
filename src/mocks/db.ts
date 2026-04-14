@@ -1,11 +1,17 @@
 import { readStorage, writeStorage } from '../utils/storage'
-import { isOverdue } from '../utils/date'
+import { isOverdue, daysSince } from '../utils/date'
 import type {
   Account,
   AccountWithDerived,
   AccountType,
   AccountSummaryData,
   AccountFormData,
+  Payment,
+  PaymentWithDerived,
+  PaymentFormData,
+  PaymentSummaryData,
+  PaymentQueryParams,
+  ConvenioReceiveData,
 } from '../types/models'
 
 let accountsPayable: Account[] = readStorage<Account[]>('accounts_payable', [])
@@ -52,7 +58,153 @@ function computeSummary(accounts: AccountWithDerived[]): AccountSummaryData {
   return { totalPending, totalPaid }
 }
 
+let payments: Payment[] = readStorage<Payment[]>('payments', [])
+
+function persistPayments() {
+  writeStorage('payments', payments)
+}
+
+function withDaysPending(list: Payment[]): PaymentWithDerived[] {
+  return list.map((p) => ({
+    ...p,
+    daysPending: p.status === 'pendente' ? daysSince(p.serviceDate) : undefined,
+  }))
+}
+
+function filterPayments(params?: PaymentQueryParams): Payment[] {
+  let result = payments
+  if (!params) return result
+  if (params.paymentType) result = result.filter((p) => p.paymentType === params.paymentType)
+  if (params.status) result = result.filter((p) => p.status === params.status)
+  if (params.convenioType) result = result.filter((p) => p.convenioType === params.convenioType)
+  if (params.patientId) result = result.filter((p) => p.patientId === params.patientId)
+  if (params.startDate) result = result.filter((p) => p.serviceDate >= params.startDate!)
+  if (params.endDate) result = result.filter((p) => p.serviceDate <= params.endDate!)
+  return result
+}
+
 export const db = {
+  payments: {
+    findAll(params?: PaymentQueryParams): PaymentWithDerived[] {
+      return withDaysPending(filterPayments(params))
+    },
+
+    summary(params?: PaymentQueryParams): PaymentSummaryData {
+      const filtered = filterPayments(params)
+      let totalPending = 0
+      let totalPaid = 0
+      let totalReceived = 0
+      for (const p of filtered) {
+        const val = Number(p.value) || 0
+        if (p.status === 'pendente') {
+          totalPending += val
+        } else if (p.status === 'pago') {
+          totalPaid += val
+          totalReceived += Number(p.receivedValue) || val
+        }
+      }
+      return { totalPending, totalPaid, totalReceived }
+    },
+
+    create(data: PaymentFormData): Payment[] {
+      const value = Number(data.value)
+      const base: Omit<Payment, 'id' | 'createdAt' | 'value' | 'installmentNumber' | 'parentPaymentId'> = {
+        patientId: data.patientId,
+        description: data.description,
+        serviceDate: data.serviceDate,
+        paymentType: data.paymentType,
+        status: data.paymentType === 'convenio' ? 'pendente' : data.status,
+        category: data.category,
+        paymentMethod: data.paymentMethod,
+        creditMode: data.creditMode,
+        installments: data.installments,
+        convenioType: data.convenioType,
+      }
+
+      // Particular + credito + parcelado: generate installments
+      if (
+        data.paymentType === 'particular' &&
+        data.paymentMethod === 'credito' &&
+        data.creditMode === 'parcelado' &&
+        data.installments &&
+        data.installments > 1
+      ) {
+        const parentId = crypto.randomUUID()
+        const installmentValue = Math.round((value / data.installments) * 100) / 100
+        const created: Payment[] = []
+        for (let i = 1; i <= data.installments; i++) {
+          const payment: Payment = {
+            ...base,
+            id: i === 1 ? parentId : crypto.randomUUID(),
+            value: installmentValue,
+            installmentNumber: i,
+            parentPaymentId: i === 1 ? undefined : parentId,
+            description: `${data.description} (${i}/${data.installments})`,
+            createdAt: new Date().toISOString(),
+          }
+          created.push(payment)
+        }
+        payments = [...payments, ...created]
+        persistPayments()
+        return created
+      }
+
+      const payment: Payment = {
+        ...base,
+        id: crypto.randomUUID(),
+        value,
+        createdAt: new Date().toISOString(),
+      }
+      payments = [...payments, payment]
+      persistPayments()
+      return [payment]
+    },
+
+    update(id: string, data: Partial<PaymentFormData>): Payment | undefined {
+      let updated: Payment | undefined
+      payments = payments.map((p) => {
+        if (p.id === id) {
+          updated = {
+            ...p,
+            ...data,
+            value: data.value !== undefined ? Number(data.value) : p.value,
+          }
+          return updated
+        }
+        return p
+      })
+      if (updated) persistPayments()
+      return updated
+    },
+
+    receive(id: string, data: ConvenioReceiveData): Payment | undefined {
+      let updated: Payment | undefined
+      payments = payments.map((p) => {
+        if (p.id === id) {
+          updated = {
+            ...p,
+            status: 'pago',
+            receivedDate: data.receivedDate,
+            receivedValue: Number(data.receivedValue),
+          }
+          return updated
+        }
+        return p
+      })
+      if (updated) persistPayments()
+      return updated
+    },
+
+    delete(id: string): boolean {
+      const target = payments.find((p) => p.id === id)
+      if (!target) return false
+      // If parent of installments, delete children too
+      payments = payments.filter((p) => p.id !== id && p.parentPaymentId !== id)
+      persistPayments()
+      return true
+    },
+  },
+
   accounts: {
     findAll(type: AccountType): AccountWithDerived[] {
       return withDerived(getAccounts(type))
@@ -104,6 +256,7 @@ export const db = {
   reset() {
     accountsPayable = []
     accountsReceivable = []
+    payments = []
     localStorage.clear()
   },
 }

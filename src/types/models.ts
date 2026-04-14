@@ -101,3 +101,69 @@ export interface StatusConfig {
   label: string
   colorClass: string
 }
+
+// Payment types
+export type PaymentType = 'particular' | 'convenio'
+export type PaymentMethod = 'especie' | 'debito' | 'credito'
+export type CreditMode = 'avista' | 'parcelado'
+export type PaymentStatus = 'pendente' | 'pago'
+
+export interface Payment {
+  id: string
+  patientId: string
+  description: string
+  value: number
+  serviceDate: string
+  paymentType: PaymentType
+  status: PaymentStatus
+  category: string
+  createdAt: string
+  // Particular
+  paymentMethod?: PaymentMethod
+  creditMode?: CreditMode
+  installments?: number
+  installmentNumber?: number
+  parentPaymentId?: string
+  // Convenio
+  convenioType?: string
+  receivedDate?: string
+  receivedValue?: number
+}
+
+export interface PaymentWithDerived extends Payment {
+  daysPending?: number
+}
+
+export interface PaymentFormData {
+  patientId: string
+  description: string
+  value: string | number
+  serviceDate: string
+  paymentType: PaymentType
+  status: PaymentStatus
+  category: string
+  paymentMethod?: PaymentMethod
+  creditMode?: CreditMode
+  installments?: number
+  convenioType?: string
+}
+
+export interface ConvenioReceiveData {
+  receivedDate: string
+  receivedValue: string | number
+}
+
+export interface PaymentSummaryData {
+  totalPending: number
+  totalPaid: number
+  totalReceived: number
+}
+
+export interface PaymentQueryParams {
+  paymentType?: PaymentType
+  status?: PaymentStatus
+  convenioType?: string
+  patientId?: string
+  startDate?: string
+  endDate?: string
+}
