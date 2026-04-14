@@ -14,7 +14,7 @@ interface AccountListProps {
 }
 
 export function AccountList({ accounts, patients, onEdit, onDelete, onNew }: AccountListProps) {
-  if (accounts.length === 0) {
+  if (!Array.isArray(accounts) || accounts.length === 0) {
     return (
       <EmptyState
         message="Nenhuma conta registrada"
