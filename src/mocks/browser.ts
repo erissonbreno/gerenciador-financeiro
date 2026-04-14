@@ -4,6 +4,8 @@ import { accountHandlers, paymentHandlers } from './handlers'
 
 export const worker = setupWorker(
   ...paymentHandlers,
-  http.all('/api/v1/*', () => passthrough()),
+  http.all('*/api/v1/*', () => passthrough()),
   ...accountHandlers,
 )
+
+export { seedMockData } from './seedData'

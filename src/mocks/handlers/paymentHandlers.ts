@@ -21,37 +21,37 @@ function extractParams(request: Request): PaymentQueryParams {
 }
 
 export const paymentHandlers = [
-  http.get('/api/v1/payments/summary', ({ request }) => {
+  http.get('*/api/v1/payments/summary', ({ request }) => {
     const params = extractParams(request)
     return HttpResponse.json(db.payments.summary(params))
   }),
 
-  http.get('/api/v1/payments', ({ request }) => {
+  http.get('*/api/v1/payments', ({ request }) => {
     const params = extractParams(request)
     return HttpResponse.json(db.payments.findAll(params))
   }),
 
-  http.post('/api/v1/payments', async ({ request }) => {
+  http.post('*/api/v1/payments', async ({ request }) => {
     const data = (await request.json()) as PaymentFormData
     const created = db.payments.create(data)
     return HttpResponse.json(created, { status: 201 })
   }),
 
-  http.put('/api/v1/payments/:id', async ({ request, params }) => {
+  http.put('*/api/v1/payments/:id', async ({ request, params }) => {
     const data = (await request.json()) as Partial<PaymentFormData>
     const payment = db.payments.update(params.id as string, data)
     if (!payment) return new HttpResponse(null, { status: 404 })
     return HttpResponse.json(payment)
   }),
 
-  http.patch('/api/v1/payments/:id/receive', async ({ request, params }) => {
+  http.patch('*/api/v1/payments/:id/receive', async ({ request, params }) => {
     const data = (await request.json()) as ConvenioReceiveData
     const payment = db.payments.receive(params.id as string, data)
     if (!payment) return new HttpResponse(null, { status: 404 })
     return HttpResponse.json(payment)
   }),
 
-  http.delete('/api/v1/payments/:id', ({ params }) => {
+  http.delete('*/api/v1/payments/:id', ({ params }) => {
     db.payments.delete(params.id as string)
     return new HttpResponse(null, { status: 204 })
   }),
