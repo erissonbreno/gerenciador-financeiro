@@ -61,6 +61,7 @@ export function ConvenioPanel({ payments, patients, summary, onReceive }: Conven
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
           className="w-40"
+          label="Status"
         />
         <Select
           options={CONVENIO_TYPES}
@@ -68,18 +69,21 @@ export function ConvenioPanel({ payments, patients, summary, onReceive }: Conven
           value={convenioFilter}
           onChange={(e) => setConvenioFilter(e.target.value)}
           className="w-48"
+          label="Convênio"
         />
         <Input
           type="date"
           value={startDate}
           onChange={(e) => setStartDate(e.target.value)}
           className="w-40"
+          label="Data início"
         />
         <Input
           type="date"
           value={endDate}
           onChange={(e) => setEndDate(e.target.value)}
           className="w-40"
+          label="Data fim"
         />
       </div>
 

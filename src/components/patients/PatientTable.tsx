@@ -2,6 +2,7 @@ import { formatCPF } from '../../utils/cpf'
 import { EmptyState } from '../common/EmptyState'
 import { Button } from '../common/Button'
 import type { Patient } from '../../types/models'
+import { formatPhone } from '../../utils/phone'
 
 interface PatientTableProps {
   patients: Patient[]
@@ -38,7 +39,7 @@ export function PatientTable({ patients, onView, onEdit, onDelete, onNew }: Pati
             <tr key={patient.id} className="border-b border-gray-100 hover:bg-gray-50">
               <td className="py-3 px-4 font-medium text-gray-800">{patient.name}</td>
               <td className="py-3 px-4 text-gray-600">{formatCPF(patient.cpf)}</td>
-              <td className="py-3 px-4 text-gray-600">{patient.phone}</td>
+              <td className="py-3 px-4 text-gray-600">{formatPhone(patient.phone)}</td>
               <td className="py-3 px-4 text-right">
                 <div className="flex justify-end gap-2">
                   <Button variant="secondary" onClick={() => onView(patient.id)}>Ver</Button>

@@ -23,6 +23,7 @@ export function PaymentFilters({ filters, onChange, showConvenioFilter = true }:
           options={PAYMENT_TYPES}
           placeholder="Todos os tipos"
           value={filters.paymentType ?? ''}
+          label="Tipo de pagamento"
           onChange={(e) => {
             const val = e.target.value
             const next: PaymentQueryParams = { ...filters, paymentType: val ? val as PaymentQueryParams['paymentType'] : undefined }
@@ -39,6 +40,7 @@ export function PaymentFilters({ filters, onChange, showConvenioFilter = true }:
         value={filters.status ?? ''}
         onChange={(e) => update('status', e.target.value)}
         className="w-40"
+        label="Status"
       />
 
       {showConvenioType && (
@@ -56,7 +58,7 @@ export function PaymentFilters({ filters, onChange, showConvenioFilter = true }:
         value={filters.startDate ?? ''}
         onChange={(e) => update('startDate', e.target.value)}
         className="w-40"
-        placeholder="Data início"
+        label="Data início"
       />
 
       <Input
@@ -64,7 +66,7 @@ export function PaymentFilters({ filters, onChange, showConvenioFilter = true }:
         value={filters.endDate ?? ''}
         onChange={(e) => update('endDate', e.target.value)}
         className="w-40"
-        placeholder="Data fim"
+        label="Data fim"
       />
     </div>
   )
