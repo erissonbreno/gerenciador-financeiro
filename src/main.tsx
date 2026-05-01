@@ -5,8 +5,9 @@ import App from './App'
 
 async function bootstrap() {
   if (import.meta.env.DEV && import.meta.env.VITE_ENABLE_MSW === 'true') {
-    const { worker } = await import('./mocks/browser')
+    const { worker, seedMockData } = await import('./mocks/browser')
     await worker.start({ onUnhandledRequest: 'bypass' })
+    await seedMockData()
   }
 
   createRoot(document.getElementById('root')!).render(

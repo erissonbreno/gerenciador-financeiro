@@ -9,6 +9,7 @@ import { formatCPF } from '../utils/cpf'
 import { formatDate } from '../utils/date'
 import { isDuplicateCpf } from '../utils/apiErrors'
 import type { PatientFormValues } from '../types/models'
+import { formatPhone } from '../utils/phone'
 
 function Field({ label, value }: { label: string; value?: string }) {
   return (
@@ -83,7 +84,7 @@ export function PatientDetailPage() {
           <Field label="RG" value={patient.rg} />
           <Field label="Gênero" value={patient.gender} />
           <Field label="Estado civil" value={patient.maritalStatus} />
-          <Field label="Telefone" value={patient.phone} />
+          <Field label="Telefone" value={formatPhone(patient.phone)} />
           <Field label="E-mail" value={patient.email} />
         </div>
 
